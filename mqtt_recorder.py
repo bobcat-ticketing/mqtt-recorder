@@ -18,8 +18,8 @@ logger = logging.getLogger('mqtt_recorder')
 async def mqtt_record(server: str, output: str = None):
     """Record MQTT messages"""
     mqtt = MQTTClient()
-    cret = await mqtt.connect(server)
-    sret = await mqtt.subscribe(TOPICS)
+    await mqtt.connect(server)
+    await mqtt.subscribe(TOPICS)
     if output is not None:
         output_file = open(output, 'wt')
     else:
@@ -39,8 +39,8 @@ async def mqtt_record(server: str, output: str = None):
 async def mqtt_replay(server: str, input: str = None):
     """Replay MQTT messages"""
     mqtt = MQTTClient()
-    cret = await mqtt.connect(server)
-    sret = await mqtt.subscribe(TOPICS)
+    await mqtt.connect(server)
+    await mqtt.subscribe(TOPICS)
     if input is not None:
         input_file = open(input, 'rt')
     else:
@@ -56,7 +56,7 @@ async def mqtt_replay(server: str, input: str = None):
             logger.warning("Missing message attribute: %s", record)
             next
         logger.info("Publish: %s", record)
-        ret = await mqtt.publish(record['topic'], msg,
+         await mqtt.publish(record['topic'], msg,
                                  retain=record.get('retain'),
                                  qos=record.get('qos', QOS_0))
 
