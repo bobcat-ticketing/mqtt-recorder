@@ -1,4 +1,4 @@
-"""MQTT realtime recorder"""
+"""MQTT recorder"""
 
 import argparse
 import asyncio
