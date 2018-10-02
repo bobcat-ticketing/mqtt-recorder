@@ -36,7 +36,7 @@ async def mqtt_record(server: str, output: str = None):
         print(json.dumps(record), file=output_file)
 
 
-async def mqtt_replay(server: str, input: str = None):
+async def mqtt_replay(server: str, input: str = None, delay: int = 0):
     """Replay MQTT messages"""
     mqtt = MQTTClient()
     await mqtt.connect(server)
@@ -59,6 +59,8 @@ async def mqtt_replay(server: str, input: str = None):
         await mqtt.publish(record['topic'], msg,
                                  retain=record.get('retain'),
                                  qos=record.get('qos', QOS_0))
+        if delay > 0:
+            time.sleep(delay/1000)
 
 
 def main():
@@ -76,6 +78,12 @@ def main():
                         choices=['record', 'replay'],
                         help='Mode of operation (record/replay)',
                         default='record')
+    parser.add_argument('--delay',
+                        dest='delay',
+                        type=int,
+                        default=0,
+                        metavar='milliseconds',
+                        help='Delay between replayed events')
     parser.add_argument('--input',
                         dest='input',
                         metavar='filename',
@@ -97,7 +105,7 @@ def main():
         logging.basicConfig(level=logging.INFO)
 
     if args.mode == 'replay':
-        process = mqtt_replay(server=args.server, input=args.input)
+        process = mqtt_replay(server=args.server, input=args.input, delay=args.delay)
     else:
         process = mqtt_record(server=args.server, output=args.output)
 
