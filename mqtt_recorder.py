@@ -56,7 +56,7 @@ async def mqtt_replay(server: str, input: str = None):
             logger.warning("Missing message attribute: %s", record)
             next
         logger.info("Publish: %s", record)
-         await mqtt.publish(record['topic'], msg,
+        await mqtt.publish(record['topic'], msg,
                                  retain=record.get('retain'),
                                  qos=record.get('qos', QOS_0))
 
