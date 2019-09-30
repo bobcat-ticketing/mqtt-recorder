@@ -62,8 +62,8 @@ async def mqtt_replay(server: str, input: str = None, delay: int = 0, realtime: 
             next
         logger.info("Publish: %s", record)
         await mqtt.publish(record['topic'], msg,
-                                 retain=record.get('retain'),
-                                 qos=record.get('qos', QOS_0))
+                           retain=record.get('retain'),
+                           qos=record.get('qos', QOS_0))
         if realtime:
             delay_s = record['time'] - last_timestamp if last_timestamp else 0
             last_timestamp = record['time']
