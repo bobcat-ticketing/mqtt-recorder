@@ -15,7 +15,7 @@ TOPICS = [("#", QOS_1)]
 logger = logging.getLogger('mqtt_recorder')
 
 
-async def mqtt_record(server: str, output: str = None):
+async def mqtt_record(server: str, output: str = None) -> None:
     """Record MQTT messages"""
     mqtt = MQTTClient()
     await mqtt.connect(server)
@@ -36,7 +36,7 @@ async def mqtt_record(server: str, output: str = None):
         print(json.dumps(record), file=output_file)
 
 
-async def mqtt_replay(server: str, input: str = None, delay: int = 0):
+async def mqtt_replay(server: str, input: str = None, delay: int = 0, realtime: bool = False) -> None:
     """Replay MQTT messages"""
     mqtt = MQTTClient()
     await mqtt.connect(server)
@@ -45,6 +45,11 @@ async def mqtt_replay(server: str, input: str = None, delay: int = 0):
         input_file = open(input, 'rt')
     else:
         input_file = sys.stdin
+    if delay > 0:
+        delay_s = delay / 1000
+    else:
+        delay_s = 0
+    last_timestamp = None
     for line in input_file:
         record = json.loads(line)
         logger.info("%s", record)
@@ -59,8 +64,12 @@ async def mqtt_replay(server: str, input: str = None, delay: int = 0):
         await mqtt.publish(record['topic'], msg,
                                  retain=record.get('retain'),
                                  qos=record.get('qos', QOS_0))
-        if delay > 0:
-            time.sleep(delay/1000)
+        if realtime:
+            delay_s = record['time'] - last_timestamp if last_timestamp else 0
+            last_timestamp = record['time']
+        if delay_s > 0:
+            logger.debug("Sleeping %.3f seconds", delay_s)
+            await asyncio.sleep(delay_s)
 
 
 def main():
@@ -92,6 +101,10 @@ def main():
                         dest='output',
                         metavar='filename',
                         help='Output file')
+    parser.add_argument('--realtime',
+                        dest='realtime',
+                        action='store_true',
+                        help="Enable realtime replay")
     parser.add_argument('--debug',
                         dest='debug',
                         action='store_true',
@@ -105,7 +118,7 @@ def main():
         logging.basicConfig(level=logging.INFO)
 
     if args.mode == 'replay':
-        process = mqtt_replay(server=args.server, input=args.input, delay=args.delay)
+        process = mqtt_replay(server=args.server, input=args.input, delay=args.delay, realtime=args.realtime)
     else:
         process = mqtt_record(server=args.server, output=args.output)
 
