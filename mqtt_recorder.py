@@ -36,7 +36,7 @@ async def mqtt_record(server: str, output: str = None) -> None:
         print(json.dumps(record), file=output_file)
 
 
-async def mqtt_replay(server: str, input: str = None, delay: int = 0, realtime: bool = False) -> None:
+async def mqtt_replay(server: str, input: str = None, delay: int = 0, realtime: bool = False, scale: float = 1) -> None:
     """Replay MQTT messages"""
     mqtt = MQTTClient()
     await mqtt.connect(server)
@@ -46,9 +46,9 @@ async def mqtt_replay(server: str, input: str = None, delay: int = 0, realtime: 
     else:
         input_file = sys.stdin
     if delay > 0:
-        delay_s = delay / 1000
+        static_delay_s = delay / 1000
     else:
-        delay_s = 0
+        static_delay_s = 0
     last_timestamp = None
     for line in input_file:
         record = json.loads(line)
@@ -64,8 +64,9 @@ async def mqtt_replay(server: str, input: str = None, delay: int = 0, realtime: 
         await mqtt.publish(record['topic'], msg,
                            retain=record.get('retain'),
                            qos=record.get('qos', QOS_0))
-        if realtime:
-            delay_s = record['time'] - last_timestamp if last_timestamp else 0
+        delay_s = static_delay_s
+        if realtime or scale != 1:
+            delay_s += (record['time'] - last_timestamp if last_timestamp else 0) * scale
             last_timestamp = record['time']
         if delay_s > 0:
             logger.debug("Sleeping %.3f seconds", delay_s)
@@ -87,12 +88,6 @@ def main():
                         choices=['record', 'replay'],
                         help='Mode of operation (record/replay)',
                         default='record')
-    parser.add_argument('--delay',
-                        dest='delay',
-                        type=int,
-                        default=0,
-                        metavar='milliseconds',
-                        help='Delay between replayed events')
     parser.add_argument('--input',
                         dest='input',
                         metavar='filename',
@@ -105,6 +100,18 @@ def main():
                         dest='realtime',
                         action='store_true',
                         help="Enable realtime replay")
+    parser.add_argument('--speed',
+                        dest='speed',
+                        type=float,
+                        default=1,
+                        metavar='factor',
+                        help='Realtime speed factor for replay (10=10x)')
+    parser.add_argument('--delay',
+                        dest='delay',
+                        type=int,
+                        default=0,
+                        metavar='milliseconds',
+                        help='Delay between replayed events')
     parser.add_argument('--debug',
                         dest='debug',
                         action='store_true',
@@ -118,7 +125,7 @@ def main():
         logging.basicConfig(level=logging.INFO)
 
     if args.mode == 'replay':
-        process = mqtt_replay(server=args.server, input=args.input, delay=args.delay, realtime=args.realtime)
+        process = mqtt_replay(server=args.server, input=args.input, delay=args.delay, realtime=args.realtime, scale=1/args.speed)
     else:
         process = mqtt_record(server=args.server, output=args.output)
 
