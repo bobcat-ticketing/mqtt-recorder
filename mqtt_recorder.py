@@ -5,6 +5,8 @@ import asyncio
 import base64
 import json
 import logging
+import os
+import signal
 import sys
 import time
 
@@ -73,6 +75,11 @@ async def mqtt_replay(server: str, input: str = None, delay: int = 0, realtime: 
             await asyncio.sleep(delay_s)
 
 
+async def shutdown(sig, loop):
+    loop.stop()
+    os._exit(-1)
+
+
 def main():
     """ Main function"""
     parser = argparse.ArgumentParser(description='MQTT recorder')
@@ -129,7 +136,11 @@ def main():
     else:
         process = mqtt_record(server=args.server, output=args.output)
 
-    asyncio.get_event_loop().run_until_complete(process)
+    loop = asyncio.get_event_loop()
+    for s in (signal.SIGINT, signal.SIGTERM):
+        loop.add_signal_handler(s, lambda: asyncio.ensure_future(shutdown(s, loop)))
+
+    loop.run_until_complete(process)
 
 
 if __name__ == "__main__":
