@@ -1,8 +1,10 @@
 language: python
 python:
+  - "3.6"
   - "3.7"
   - "3.8"
 install:
+ - pip install hbmqtt
  - pip install pylama
 script:
  - python -m compileall mqtt_recorder.py
