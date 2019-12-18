@@ -1,0 +1,11 @@
+language: python
+python:
+  - "3.7"
+  - "3.8"
+install:
+ - pip install pylama
+script:
+ - python -m compileall mqtt_recorder.py
+ - pylama mqtt_recorder.py
+notifications:
+  email: false
