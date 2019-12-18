@@ -2,13 +2,13 @@
 
 import argparse
 import asyncio
+import base64
 import json
 import logging
 import sys
-import base64
 import time
-from hbmqtt.client import MQTTClient, QOS_0, QOS_1
 
+from hbmqtt.client import QOS_0, QOS_1, MQTTClient
 
 TOPICS = [("#", QOS_1)]
 
