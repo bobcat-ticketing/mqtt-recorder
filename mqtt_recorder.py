@@ -132,7 +132,9 @@ def main():
         logging.basicConfig(level=logging.INFO)
 
     if args.mode == 'replay':
-        process = mqtt_replay(server=args.server, input=args.input, delay=args.delay, realtime=args.realtime, scale=1/args.speed)
+        process = mqtt_replay(server=args.server, input=args.input,
+                              delay=args.delay, realtime=args.realtime,
+                              scale=1 / args.speed)
     else:
         process = mqtt_record(server=args.server, output=args.output)
 
