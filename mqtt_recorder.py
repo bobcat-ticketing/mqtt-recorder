@@ -10,45 +10,42 @@ import signal
 import sys
 import time
 
-from hbmqtt.client import QOS_0, QOS_1, MQTTClient
-
-TOPICS = [("#", QOS_1)]
+from asyncio_mqtt import Client
 
 logger = logging.getLogger("mqtt_recorder")
 
 
-async def mqtt_record(server: str, output: str = None) -> None:
+async def mqtt_record(client: Client, output: str = None, topic: str = "#") -> None:
     """Record MQTT messages"""
-    mqtt = MQTTClient()
-    await mqtt.connect(server)
-    await mqtt.subscribe(TOPICS)
     if output is not None:
         output_file = open(output, "wt")
     else:
         output_file = sys.stdout
-    while True:
-        message = await mqtt.deliver_message()
-        record = {
-            "time": time.time(),
-            "qos": message.qos,
-            "retain": message.retain,
-            "topic": message.topic,
-            "msg_b64": base64.urlsafe_b64encode(message.data).decode(),
-        }
-        print(json.dumps(record), file=output_file)
+    await client.connect()
+    await client.subscribe(topic)
+    async with client.unfiltered_messages() as messages:
+        async for message in messages:
+            record = {
+                "time": time.time(),
+                "qos": message.qos,
+                "retain": message.retain,
+                "topic": message.topic,
+                "msg_b64": base64.urlsafe_b64encode(message.payload).decode(),
+            }
+            logger.info("Received: %s", record)
+            print(json.dumps(record), file=output_file)
+            output_file.flush()
 
 
 async def mqtt_replay(
-    server: str,
+    client: Client,
     input: str = None,
     delay: int = 0,
     realtime: bool = False,
     scale: float = 1,
 ) -> None:
     """Replay MQTT messages"""
-    mqtt = MQTTClient()
-    await mqtt.connect(server)
-    await mqtt.subscribe(TOPICS)
+    await client.connect()
     if input is not None:
         input_file = open(input, "rt")
     else:
@@ -69,11 +66,11 @@ async def mqtt_replay(
             logger.warning("Missing message attribute: %s", record)
             next
         logger.info("Publish: %s", record)
-        await mqtt.publish(
+        await client.publish(
             record["topic"],
             msg,
             retain=record.get("retain"),
-            qos=record.get("qos", QOS_0),
+            qos=record.get("qos", 0),
         )
         delay_s = static_delay_s
         if realtime or scale != 1:
@@ -100,7 +97,7 @@ def main():
         dest="server",
         metavar="server",
         help="MQTT broker",
-        default="mqtt://127.0.0.1/",
+        default="127.0.0.1",
     )
     parser.add_argument(
         "--mode",
@@ -147,16 +144,18 @@ def main():
     else:
         logging.basicConfig(level=logging.INFO)
 
+    client = Client(hostname=args.server)
+
     if args.mode == "replay":
         process = mqtt_replay(
-            server=args.server,
+            client=client,
             input=args.input,
             delay=args.delay,
             realtime=args.realtime,
             scale=1 / args.speed,
         )
     else:
-        process = mqtt_record(server=args.server, output=args.output)
+        process = mqtt_record(client=client, output=args.output)
 
     loop = asyncio.get_event_loop()
     for s in (signal.SIGINT, signal.SIGTERM):
