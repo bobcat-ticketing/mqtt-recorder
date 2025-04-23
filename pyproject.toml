@@ -1,32 +1,43 @@
-[tool.poetry]
+[project]
 name = "mqtt_recorder"
-version = "1.0.0"
+version = "1.1.0"
 description = "MQTT Record"
-authors = ["Jakob Schlyter <jakob@kirei.se>"]
+authors = [{name="Jakob Schlyter", email = "jakob@kirei.se"}]
+requires-python = ">=3.11,<4.0"
 
-[tool.poetry.scripts]
+[project.scripts]
 mqtt_recorder = "mqtt_recorder:main"
 
 [tool.poetry.dependencies]
-python = "^3.9"
-asyncio-mqtt = "^0.10.0"
+aiomqtt = "^2.3.2"
 
-[tool.poetry.dev-dependencies]
-black = "^22"
-isort = "^5.6.4"
-pytest = "^6.2.0"
-pytest-black = "^0.3.12"
-pytest-isort = "^1.2.0"
+[tool.poetry.group.dev.dependencies]
+ruff = "^0.11.6"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]
 build-backend = "poetry.core.masonry.api"
 
-[tool.isort]
-profile = "black"
+[tool.ruff]
+line-length = 88
 
-[tool.pylama.linter.pycodestyle]
-max_line_length = 120
+[tool.ruff.lint]
+select = [
+    # pycodestyle
+    "E",
+    # Pyflakes
+    "F",
+    # pyupgrade
+    "UP",
+    # flake8-bugbear
+    "B",
+    # flake8-simplify
+    "SIM",
+    # isort
+    "I",
+]
+ignore = ["SIM115"]
 
-[tool.pylama.linter.mccabe]
-complexity = 40
+[tool.ruff.lint.isort]
+combine-as-imports = true
+split-on-trailing-comma = false
