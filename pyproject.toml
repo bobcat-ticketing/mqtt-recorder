@@ -1,22 +1,30 @@
 [project]
 name = "mqtt_recorder"
-version = "1.1.0"
 description = "MQTT Record"
-authors = [{name="Jakob Schlyter", email = "jakob@kirei.se"}]
-requires-python = ">=3.11,<4.0"
+license = "BSD-2-Clause"
+dynamic = ["version"]
+requires-python = "<4.0,>=3.11"
+authors = [
+    {name = "Bobcat Ticketing Solutions AB"},
+]
+dependencies = [
+    "aiomqtt>=2.4.0",
+]
 
 [project.scripts]
 mqtt_recorder = "mqtt_recorder:main"
 
-[tool.poetry.dependencies]
-aiomqtt = "^2.3.2"
-
-[tool.poetry.group.dev.dependencies]
-ruff = "^0.11.6"
+[dependency-groups]
+dev = [
+    "ruff>=0.13.1",
+]
 
 [build-system]
-requires = ["poetry-core>=1.0.0"]
-build-backend = "poetry.core.masonry.api"
+requires = ["hatchling", "uv-dynamic-versioning"]
+build-backend = "hatchling.build"
+
+[tool.hatch.version]
+source = "uv-dynamic-versioning"
 
 [tool.ruff]
 line-length = 88
